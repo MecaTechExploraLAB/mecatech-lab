@@ -42,7 +42,10 @@
     nav.appendChild(a);
   });
   nav.appendChild(ext(el('a', { 'class': 'mt-ext', href: HOTMART }, 'Materiais &amp; Projetos ↗')));
-  bar.appendChild(brand); bar.appendChild(burger); bar.appendChild(nav);
+  var yt = ext(el('a', { 'class': 'mt-yt', href: YOUTUBE, 'aria-label': 'Canal MecaTechExplora no YouTube (abre em nova aba)' }, '<span aria-hidden="true">▶</span><span class="mt-yt-t">YouTube</span>'));
+  var left = el('div', { 'class': 'mt-left' });
+  left.appendChild(brand); left.appendChild(yt);
+  bar.appendChild(left); bar.appendChild(burger); bar.appendChild(nav);
   header.appendChild(bar);
   document.body.insertBefore(header, document.body.firstChild);
 
@@ -55,7 +58,7 @@
   nav.addEventListener('click', function (e) { if (e.target.closest('a')) setMenu(false); });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') setMenu(false); });
   document.addEventListener('click', function (e) { if (!header.contains(e.target)) setMenu(false); });
-  window.addEventListener('resize', function () { if (window.innerWidth > 1020) setMenu(false); });
+  window.addEventListener('resize', function () { if (window.innerWidth > 1140) setMenu(false); });
 
   /* rodapé */
   var footer = el('footer', { 'class': 'mt-footer' });
