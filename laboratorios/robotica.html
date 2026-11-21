@@ -294,5 +294,6 @@ let last=performance.now(),acc=0;
 function frame(t){const dt=Math.min(.05,(t-last)/1000);last=t;step(dt);acc+=dt;if(acc>.08){acc=0;ui()}if(V)V.render();requestAnimationFrame(frame)}
 requestAnimationFrame(frame);
 </script>
+<!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "f125d56c27d24f99a3ac41567d6e7537"}'></script><!-- End Cloudflare Web Analytics -->
 </body>
 </html>
