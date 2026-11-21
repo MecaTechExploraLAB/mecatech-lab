@@ -20,6 +20,9 @@
 .hud .btn[aria-pressed="true"]{border-color:var(--mt-blue);color:var(--mt-blue)}
 .tip3d{position:absolute;left:10px;bottom:8px;font-size:12px;color:var(--mt-mut);z-index:2;pointer-events:none}
 #vMsg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px;color:var(--mt-mut);z-index:1}
+#alarm{display:none;position:absolute;left:8px;right:8px;top:48px;z-index:4;background:#b3201f;border:2px solid #ff8a8a;color:#fff;border-radius:12px;padding:10px 14px;font-weight:700;text-align:center;animation:pisca .7s steps(2) infinite}
+#alarm.on{display:block}#alarm small{display:block;font-weight:500;margin-top:2px}
+@keyframes pisca{50%{background:#6e1212}}
 .pend{background:linear-gradient(180deg,#16233f,#0e1932);border:2px solid var(--mt-metal2);border-radius:22px;padding:14px;box-shadow:0 10px 30px #0008}
 .pend-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-weight:700;letter-spacing:.06em;font-size:14px}
 .led{width:12px;height:12px;border-radius:50%;background:#4a5568;display:inline-block;margin-right:8px;box-shadow:0 0 0 2px #0006}
@@ -30,7 +33,8 @@
 .scr-t{display:flex;justify-content:space-between;color:#4fb7cf;font-size:12px;letter-spacing:.08em}
 #sSt{margin:6px 0 8px;font-weight:700;min-height:1.3em;color:#7fe9ff}#sSt.warn{color:#ffb020}#sSt.err{color:#ff6b6b}#sSt.ok{color:#59f0a8}
 .g6{display:grid;grid-template-columns:repeat(3,1fr);gap:4px 8px}.g6 span{color:#4fb7cf}.g6 b{color:#e8fbff;font-weight:500}
-.g6+.g6{margin-top:6px;padding-top:6px;border-top:1px solid #0b2b3d}
+.g6+.g6,.scr-g{margin-top:6px;padding-top:6px;border-top:1px solid #0b2b3d}
+.scr-g{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;color:#4fb7cf}.scr-g b{color:#e8fbff;font-weight:500}#sP{color:#59f0a8;font-weight:700}
 .rows{margin:10px 0 6px}
 .jr{display:grid;grid-template-columns:36px 1fr 56px 56px;gap:8px;align-items:center;padding:6px;border-radius:12px;border:1px solid transparent;margin-bottom:4px}
 .jr.sel{border-color:var(--mt-blue);background:#0d2a4a}.jr>b{font-size:17px}
@@ -62,16 +66,18 @@
 .mact{display:flex;gap:8px;flex-wrap:wrap}.mact .btn{min-height:40px;padding:6px 14px;font-size:14px}
 @media(max-width:900px){.robo-grid{grid-template-columns:1fr}
  .view{position:sticky;top:60px;z-index:5;height:auto;min-height:0;aspect-ratio:4/3.2}}
+@media (prefers-reduced-motion:reduce){#alarm{animation:none}}
 </style>
 </head>
 <body data-page="robotica">
 <main class="lab-main">
 <h1>Laboratório de robótica industrial</h1>
-<p class="sub">Opere um robô de 6 eixos pelo Teach Pendant virtual. Gire a câmera arrastando o robô.</p>
+<p class="sub">Opere um robô de 6 eixos pelo Teach Pendant virtual. Pegue a peça com a garra e leve até a área verde. Gire a câmera arrastando.</p>
 <p class="aviso" role="note"><b>Simulador educacional.</b> Estes comandos não controlam nenhum equipamento físico. O robô é didático, inspirado na robótica industrial, e não reproduz um modelo específico.</p>
 <div class="robo-grid">
   <section class="view" aria-label="Robô industrial em 3D">
     <div id="cv"></div><div id="vMsg">Carregando o 3D…</div>
+    <div id="alarm" role="alert"><span id="alarmT">ALARME DE COLISÃO</span><small>O robô parou. Toque em HABILITAR para rearmar e afaste a ferramenta.</small></div>
     <div class="hud"><button class="btn" data-v="pad" type="button">Câmera</button><button class="btn" data-v="frente" type="button">Frente</button><button class="btn" data-v="lado" type="button">Lado</button><button class="btn" data-v="topo" type="button">Topo</button><button class="btn" id="bLab" aria-pressed="true" type="button">Rótulos</button></div>
     <div class="tip3d">Arraste para girar · pinça ou rolagem para zoom</div>
   </section>
@@ -83,15 +89,18 @@
       <div id="sSt">PRESSIONE HABILITAR PARA MOVER</div>
       <div class="g6"><span>A1 <b id="a0"></b></span><span>A2 <b id="a1"></b></span><span>A3 <b id="a2"></b></span><span>A4 <b id="a3"></b></span><span>A5 <b id="a4"></b></span><span>A6 <b id="a5"></b></span></div>
       <div class="g6"><span>X <b id="cX"></b></span><span>Y <b id="cY"></b></span><span>Z <b id="cZ"></b></span><span>A <b id="cA"></b></span><span>B <b id="cB"></b></span><span>C <b id="cC"></b></span></div>
+      <div class="scr-g"><span>GARRA <b id="sG">ABERTA</b></span><span id="sP"></span></div>
     </div>
     <div class="rows" id="rows"></div>
     <div class="spd"><label for="spd">Velocidade</label><input type="range" id="spd" min="5" max="100" value="40"><b id="spdV">40%</b></div>
     <div class="ctl4">
+      <button class="btn" id="gOpen" type="button">ABRIR GARRA</button><button class="btn" id="gClose" type="button">FECHAR GARRA</button>
       <button class="btn" id="bEn" type="button">HABILITAR</button><button class="btn" id="bHome" type="button">HOME</button>
-      <button class="btn" id="bRst" type="button">REINICIAR POSIÇÃO</button>      <button class="btn stop" id="bStop" type="button">STOP</button>
+      <button class="btn" id="bRst" type="button">REINICIAR CÉLULA</button>
+      <button class="btn stop" id="bStop" type="button">STOP</button>
     </div>
-    <div class="pg"><h3>Programa de pontos</h3>
-      <div class="row"><button class="btn" id="bSave" type="button">Salvar ponto</button><button class="btn" id="bRun" type="button">Executar</button><button class="btn" id="bClr" type="button">Limpar</button></div>
+    <div class="pg"><h3>Programa de pontos (posição + garra)</h3>
+      <div class="row"><button class="btn" id="bSave" type="button">Salvar ponto</button><button class="btn" id="bRun" type="button">Executar</button><button class="btn" id="bClr" type="button">Limpar</button><button class="btn" id="bPeca" type="button">Recolocar peça</button></div>
       <div id="pts"></div></div>
   </aside>
 </div>
@@ -105,80 +114,27 @@
 <script src="../js/vendor/three.min.js"></script>
 <script src="../js/vendor/OrbitControls.js"></script>
 <script src="../js/robo-cinematica.js"></script>
+<script src="../js/robo-modelo.js"></script>
 <script>
-const K=RoboCin,$=i=>document.getElementById(i),D2R=Math.PI/180,AX=['A1','A2','A3','A4','A5','A6'];
-let q=K.HOME.slice(),enabled=false,stopped=false,mode='joint',sel=0,speed=40,motion=null,prog=null,jog=null,ct=null,pts=[],progDone=false,mi=0,J=null,V=null;
-const doneM=[0,0,0,0,0,0],seen=new Set(),mx=[0,0,0,0,0,0],cd=[0,0,0];let base={q:q.slice(),tcp:K.fk(q).tcp};
+const K=RoboCin,$=i=>document.getElementById(i),AX=['A1','A2','A3','A4','A5','A6'];
+let q=K.HOME.slice(),enabled=false,stopped=false,mode='joint',sel=0,speed=40,motion=null,prog=null,jog=null,ct=null,pts=[],progDone=false,mi=0,V=null;
+let grip=K.newGrip(),pc=K.newPiece(),alarm=false,alarmSeen=false,rearmed=false,colWarn='',grabbed=false,droppedOK=false,actx=null;
+const doneM=[0,0,0,0,0,0,0,0],seen=new Set(),mx=[0,0,0,0,0,0],cd=[0,0,0];let base={q:q.slice(),tcp:K.fk(q).tcp};
 let msg='PRESSIONE HABILITAR PARA MOVER',mk='';
 const setMsg=(t,k)=>{msg=t;mk=k||''};
 
-/* ---------- modelo 3D (mm do robô viram metros; eixo Z para cima) ---------- */
-function buildRobot(W){
-  const M=(c,m,r)=>new THREE.MeshStandardMaterial({color:c,metalness:m,roughness:r});
-  const OR=M(0xff6a00,.25,.45),DK=M(0x2b3038,.5,.4),GR=M(0xa7b0bb,.6,.35);
-  const add=(g,m,p,x,y,z,rx,ry,rz)=>{const o=new THREE.Mesh(g,m);o.position.set(x||0,y||0,z||0);o.rotation.set(rx||0,ry||0,rz||0);o.castShadow=o.receiveShadow=true;p.add(o);return o};
-  const cy=(a,b,h)=>new THREE.CylinderGeometry(a,b,h,32),bx=(x,y,z)=>new THREE.BoxGeometry(x,y,z),H=Math.PI/2;
-  const ring=(p,ax,r,len,x,y,z)=>{const m=new THREE.Mesh(cy(r,r,len),new THREE.MeshBasicMaterial({color:0x00d4ff,transparent:true,opacity:.35,depthWrite:false}));
-    m.position.set(x||0,y||0,z||0);if(ax==='x')m.rotation.z=H;if(ax==='z')m.rotation.x=H;m.visible=false;p.add(m);return m};
-  const lab=(t,p,x,y,z,col)=>{const c=document.createElement('canvas');c.width=c.height=128;const g=c.getContext&&c.getContext('2d');if(!g)return new THREE.Object3D();
-    g.fillStyle='rgba(6,11,25,.85)';g.beginPath();g.arc(64,64,56,0,7);g.fill();g.lineWidth=7;g.strokeStyle=col||'#00D4FF';g.stroke();
-    g.fillStyle='#F1F5F9';g.font='bold 52px Arial';g.textAlign='center';g.textBaseline='middle';g.fillText(t,64,68);
-    const s=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),depthTest:false,transparent:true}));s.scale.set(.1,.1,1);s.position.set(x,y,z);s.renderOrder=9;p.add(s);labels.push(s);return s};
-  const labels=[],rings=[];
-  /* célula: piso, grade, faixa de segurança, mesa */
-  const fl=new THREE.Mesh(new THREE.PlaneGeometry(4,4),M(0x121b2b,0,.9));fl.receiveShadow=true;W.add(fl);
-  const gr=new THREE.GridHelper(4,20,0x1e3a5f,0x16253d);gr.rotation.x=H;gr.position.z=.001;W.add(gr);
-  const hz=new THREE.Mesh(new THREE.RingGeometry(1.02,1.08,72),new THREE.MeshBasicMaterial({color:0xf9c823}));hz.position.z=.003;W.add(hz);
-  add(bx(.5,.7,.45),M(0x3a4756,.4,.6),W,.62,.55,.225);add(bx(.52,.72,.03),GR,W,.62,.55,.465);
-  const ax=new THREE.AxesHelper(.3);ax.position.set(-.32,-.32,.032);W.add(ax);
-  lab('X',W,-.0,-.32,.032,'#ff5a5a');lab('Y',W,-.32,-.02,.032,'#59f0a8');lab('Z',W,-.32,-.32,.34,'#6fa8ff');
-  /* base e eixo A1 */
-  add(bx(.56,.56,.03),DK,W,0,0,.015);add(cy(.2,.22,.1),GR,W,0,0,.08,H);
-  const g1=new THREE.Group();W.add(g1);
-  add(cy(.17,.17,.26),OR,g1,0,0,.23,H);add(bx(.2,.27,.3),OR,g1,.02,0,.33);
-  rings[0]=ring(g1,'z',.2,.28,0,0,.23);lab('A1',g1,0,-.24,.23);
-  /* A2: ombro */
-  const g2=new THREE.Group();g2.position.set(.025,0,.4);g1.add(g2);
-  add(cy(.12,.12,.34),DK,g2);add(bx(.44,.15,.13),OR,g2,.22,0,0);add(cy(.075,.075,.15),OR,g2,0,0,0);
-  rings[1]=ring(g2,'y',.17,.38);lab('A2',g2,0,-.22,.0);
-  /* A3: cotovelo */
-  const g3=new THREE.Group();g3.position.set(.44,0,0);g2.add(g3);
-  add(cy(.09,.09,.22),DK,g3);add(cy(.05,.08,.42),OR,g3,.21,0,0,0,0,-H);
-  rings[2]=ring(g3,'y',.12,.26);lab('A3',g3,0,-.2,.0);
-  /* A4, A5, A6: punho esférico */
-  const g4=new THREE.Group();g4.position.set(.42,0,0);g3.add(g4);
-  add(cy(.06,.06,.1),DK,g4,.03,0,0,0,0,H);rings[3]=ring(g4,'x',.09,.14,.03);lab('A4',g4,.03,-.14,.08);
-  const g5=new THREE.Group();g4.add(g5);
-  add(cy(.055,.055,.15),OR,g5);add(bx(.1,.09,.09),OR,g5,.05,0,0);rings[4]=ring(g5,'y',.08,.17);lab('A5',g5,0,-.14,-.05);
-  const g6=new THREE.Group();g5.add(g6);
-  add(cy(.045,.045,.05),GR,g6,.1,0,0,0,0,H);add(bx(.04,.09,.05),DK,g6,.14,0,0);
-  add(bx(.06,.012,.035),GR,g6,.19,.035,0);add(bx(.06,.012,.035),GR,g6,.19,-.035,0);
-  add(new THREE.SphereGeometry(.008,12,12),M(0xff3030,0,.5),g6,.22,0,0);
-  rings[5]=ring(g6,'x',.065,.07,.1);lab('A6',g6,.12,-.12,.0);
-  /* alvo da missão 5 */
-  const tg=new THREE.Mesh(new THREE.SphereGeometry(.022,20,20),new THREE.MeshBasicMaterial({color:0x2ee59d,transparent:true,opacity:.55}));tg.position.set(.6,.15,.5);tg.visible=false;W.add(tg);
-  return{j:[g1,g2,g3,g4,g5,g6],rings,labels,target:tg};
-}
+/* ---------- cena 3D (modelo em js/robo-modelo.js) ---------- */
+const S0=RoboModelo.cena({labels:true}),M=S0.model;
 function initView(){
-  const cv=$('cv'),sc=new THREE.Scene(),W=new THREE.Group();W.rotation.x=-Math.PI/2;sc.add(W);
-  sc.background=new THREE.Color(0x0a1020);sc.fog=new THREE.Fog(0x0a1020,6,14);
-  const R=buildRobot(W);J=R.j;
-  sc.add(new THREE.HemisphereLight(0xbfd6ff,0x1a2030,.85));
-  const dl=new THREE.DirectionalLight(0xffffff,.95);dl.position.set(2,4,2);dl.castShadow=true;dl.shadow.mapSize.set(1024,1024);
-  Object.assign(dl.shadow.camera,{left:-2,right:2,top:2,bottom:-2});sc.add(dl);
-  const cam=new THREE.PerspectiveCamera(40,1,.05,30),rd=new THREE.WebGLRenderer({antialias:true});
-  rd.setPixelRatio(Math.min(window.devicePixelRatio||1,2));rd.shadowMap.enabled=true;cv.appendChild(rd.domElement);
-  const oc=new THREE.OrbitControls(cam,rd.domElement);oc.enableDamping=true;oc.enablePan=false;oc.minDistance=.9;oc.maxDistance=5;oc.maxPolarAngle=Math.PI/2-.03;
-  const views={pad:[1.9,1.35,1.7,.35,.55,0],frente:[3,.9,0,.35,.55,0],lado:[.4,.9,3,.35,.55,0],topo:[.4,4.2,.01,.35,0,0]};
-  const setView=n=>{const v=views[n];cam.position.set(v[0],v[1],v[2]);oc.target.set(v[3],v[4],v[5]);oc.update()};
-  const resize=()=>{const w=cv.clientWidth,h=cv.clientHeight;if(!w||!h)return;rd.setSize(w,h,false);cam.aspect=w/h;cam.updateProjectionMatrix()};
-  new ResizeObserver(resize).observe(cv);setView('pad');resize();$('vMsg').style.display='none';
-  document.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>setView(b.dataset.v));
-  $('bLab').onclick=e=>{const on=e.currentTarget.getAttribute('aria-pressed')!=='true';e.currentTarget.setAttribute('aria-pressed',String(on));R.labels.forEach(s=>s.visible=on)};
-  V={rings:R.rings,target:R.target,render(){oc.update();rd.render(sc,cam)}};
+  const S=RoboModelo.render($('cv'),S0,{controls:true,pixelMax:2});
+  document.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>S.setView(b.dataset.v));
+  $('bLab').onclick=e=>{const on=e.currentTarget.getAttribute('aria-pressed')!=='true';e.currentTarget.setAttribute('aria-pressed',String(on));M.labels.forEach(s=>s.visible=on)};
+  V=S;$('vMsg').style.display='none';
 }
 function loadFail(e){$('vMsg').textContent='Não foi possível abrir o 3D neste navegador (WebGL). Atualize o Chrome ou tente outro aparelho. O Teach Pendant continua funcionando.';console.warn(e)}
-function updateModel(){if(!J)return;J[0].rotation.z=q[0]*D2R;J[1].rotation.y=q[1]*D2R;J[2].rotation.y=q[2]*D2R;J[3].rotation.x=q[3]*D2R;J[4].rotation.y=q[4]*D2R;J[5].rotation.x=q[5]*D2R}
+const updateModel=()=>RoboModelo.aplicar(M,q,grip.gw,pc);
+function beep(){try{actx=actx||new(window.AudioContext||window.webkitAudioContext)();const o=actx.createOscillator(),g=actx.createGain();o.type='square';o.frequency.value=880;g.gain.value=.05;o.connect(g);g.connect(actx.destination);
+  const t=actx.currentTime;g.gain.setValueAtTime(.05,t);g.gain.setValueAtTime(0,t+.15);g.gain.setValueAtTime(.05,t+.3);g.gain.setValueAtTime(0,t+.45);o.start(t);o.stop(t+.5)}catch(e){}}
 
 /* ---------- movimento ---------- */
 function canMove(){if(!enabled){setMsg('PRESSIONE HABILITAR PARA MOVER','warn');return false}return true}
@@ -202,23 +158,37 @@ function jogStep(dt){
 }
 function startMotion(to,done){const m=Math.max(...to.map((v,i)=>Math.abs(v-q[i])));
   if(m<.01){done&&done();return}motion={from:q.slice(),to:to.slice(),t:0,dur:Math.max(.5,m/(speed*1.5)),done};setMsg('EXECUTANDO MOVIMENTO','')}
+function triggerAlarm(pq,pgw,why){
+  q=pq;grip.gw=pgw;motion=null;prog=null;jog=null;ct=null;enabled=false;stopped=true;alarm=true;alarmSeen=true;
+  setMsg('ALARME: '+why,'err');$('alarmT').textContent='ALARME DE COLISÃO: '+why.replace('COLISÃO ','');$('alarm').classList.add('on');beep();renderPts()}
 function step(dt){
+  const pq=q.slice(),pgw=grip.gw;
   if(motion){motion.t+=dt;const s=Math.min(1,motion.t/motion.dur),e=s*s*(3-2*s),m=motion;q=m.from.map((a,i)=>a+(m.to[i]-a)*e);if(s>=1){motion=null;m.done&&m.done()}}
   else if(jog&&enabled)jogStep(dt);
+  if(enabled){const a0=pc.att;K.gripStep(grip,dt,pc,q);if(!a0&&pc.att)grabbed=true}
+  K.pieceStep(pc,dt);
+  const c=K.collide(q,grip.gw,pc);
+  if(c.level===2&&!alarm)triggerAlarm(pq,pgw,c.msg);else colWarn=c.level===1?c.msg:'';
+  droppedOK=grabbed&&!pc.att&&!pc.fall&&Math.hypot(pc.c[0]-K.PEC.dest[0],pc.c[1]-K.PEC.dest[1])<50&&Math.abs(pc.c[2]-K.PEC.dest[2])<1;
   updateModel();track();
 }
 function stopAll(){motion=null;prog=null;jog=null;ct=null;enabled=false;stopped=true;setMsg('STOP: MOVIMENTO INTERROMPIDO','err');renderPts()}
-function toggleEnable(){if(enabled){motion=null;prog=null;jog=null;ct=null;enabled=false;setMsg('MOVIMENTO DESABILITADO','')}else{enabled=true;stopped=false;setMsg('MOVIMENTO HABILITADO','ok')}renderPts()}
+function toggleEnable(){
+  if(enabled){motion=null;prog=null;jog=null;ct=null;enabled=false;setMsg('MOVIMENTO DESABILITADO','')}
+  else{enabled=true;stopped=false;if(alarm){alarm=false;rearmed=true;$('alarm').classList.remove('on');setMsg('ALARME REARMADO: AFASTE A FERRAMENTA','ok')}else setMsg('MOVIMENTO HABILITADO','ok')}
+  renderPts()}
 function goHome(){if(!canMove())return;if(motion||prog)return;startMotion(K.HOME,()=>setMsg('HOME ATINGIDO','ok'))}
-function resetPos(){motion=null;prog=null;jog=null;ct=null;q=K.HOME.slice();setMsg('POSIÇÃO REINICIADA','ok');renderPts();updateModel()}
-/* programa de pontos */
-function savePoint(){if(pts.length>=10){setMsg('LIMITE DE 10 PONTOS','warn');return}pts.push(q.slice());setMsg('PONTO P'+pts.length+' SALVO','ok');renderPts()}
+function resetPos(){motion=null;prog=null;jog=null;ct=null;q=K.HOME.slice();grip=K.newGrip();pc=K.newPiece();alarm=false;$('alarm').classList.remove('on');setMsg('CÉLULA REINICIADA','ok');renderPts();updateModel()}
+function gripCmd(v){if(!canMove())return;if(motion||prog){setMsg('AGUARDE O MOVIMENTO TERMINAR','warn');return}K.setGrip(grip,v,pc,q);setMsg(v?'FECHANDO A GARRA':'ABRINDO A GARRA','')}
+/* programa de pontos: cada ponto guarda a posição e o estado da garra */
+function savePoint(){if(pts.length>=10){setMsg('LIMITE DE 10 PONTOS','warn');return}pts.push({q:q.slice(),g:grip.tgt});setMsg('PONTO P'+pts.length+' SALVO (GARRA '+(grip.tgt?'FECHADA':'ABERTA')+')','ok');renderPts()}
 function clearPts(){pts=[];prog=null;progDone=false;renderPts();setMsg('PONTOS APAGADOS','')}
 function runProg(){if(!pts.length){setMsg('GRAVE PELO MENOS UM PONTO','warn');return}if(!canMove()||motion||prog)return;progDone=false;prog={i:0};nextPoint()}
 function nextPoint(){if(!prog)return;
   if(prog.i>=pts.length){prog=null;progDone=true;setMsg('PROGRAMA CONCLUÍDO','ok');renderPts();return}
-  const i=prog.i++;renderPts();startMotion(pts[i],()=>{motion={from:q.slice(),to:q.slice(),t:0,dur:.35,done:nextPoint}});setMsg('EXECUTANDO P'+(i+1),'')}
-function renderPts(){$('pts').innerHTML=pts.length?pts.map((p,i)=>'<span class="'+(prog&&prog.i-1===i?'run':'')+'">P'+(i+1)+'</span>').join(''):'<small style="color:var(--mt-mut)">Nenhum ponto salvo. Mova o robô e toque em Salvar ponto.</small>'}
+  const i=prog.i++;renderPts();setMsg('EXECUTANDO P'+(i+1),'');
+  startMotion(pts[i].q,()=>{const ch=pts[i].g!==grip.tgt;if(ch)K.setGrip(grip,pts[i].g,pc,q);motion={from:q.slice(),to:q.slice(),t:0,dur:ch?1:.35,done:nextPoint}})}
+function renderPts(){$('pts').innerHTML=pts.length?pts.map((p,i)=>'<span class="'+(prog&&prog.i-1===i?'run':'')+'">P'+(i+1)+' · '+(p.g?'fechada':'aberta')+'</span>').join(''):'<small style="color:var(--mt-mut)">Nenhum ponto salvo. Mova o robô, ajuste a garra e toque em Salvar ponto.</small>'}
 
 /* ---------- Teach Pendant ---------- */
 function buildRows(){
@@ -228,17 +198,19 @@ function buildRows(){
       '<button type="button" class="btn jb" data-d="-1" aria-label="'+n+' negativo">−</button><button type="button" class="btn jb" data-d="1" aria-label="'+n+' positivo">+</button>';R.appendChild(r)});
   markSel();
 }
-function markSel(){document.querySelectorAll('#rows .jr').forEach((r,i)=>r.classList.toggle('sel',mode==='joint'&&i===sel));if(V)V.rings.forEach((r,i)=>r.visible=mode==='joint'&&i===sel)}
+function markSel(){document.querySelectorAll('#rows .jr').forEach((r,i)=>r.classList.toggle('sel',mode==='joint'&&i===sel));M.rings.forEach((r,i)=>r.visible=mode==='joint'&&i===sel)}
 function setMode(m){endJog();mode=m;$('mJ').setAttribute('aria-pressed',String(m==='joint'));$('mC').setAttribute('aria-pressed',String(m==='cart'));buildRows();ui()}
 const f1=(x,d)=>x.toFixed(d===undefined?1:d).replace('.',',');
 function ui(){
   const f=K.fk(q),t=f.tcp,o=K.abc(f.R);
   $('sMode').textContent=mode==='joint'?'MODO JOINT':'MODO CARTESIAN';
-  $('sEn').textContent=enabled?'HABILITADO':(stopped?'STOP':'DESABILITADO');
-  $('pLed').className='led'+(enabled?' on':stopped?' stop':'');$('bEn').classList.toggle('on',enabled);$('bEn').textContent=enabled?'HABILITADO ✓':'HABILITAR';
-  const st=$('sSt');st.textContent=msg;st.className=mk;
+  $('sEn').textContent=alarm?'ALARME':enabled?'HABILITADO':(stopped?'STOP':'DESABILITADO');
+  $('pLed').className='led'+(enabled?' on':(stopped||alarm)?' stop':'');$('bEn').classList.toggle('on',enabled);$('bEn').textContent=enabled?'HABILITADO ✓':'HABILITAR';
+  const st=$('sSt'),warn=!alarm&&colWarn&&mk!=='err';st.textContent=warn?'ATENÇÃO: '+colWarn:msg;st.className=warn?'warn':mk;
   q.forEach((v,i)=>$('a'+i).textContent=f1(v)+'°');
   $('cX').textContent=f1(t[0]);$('cY').textContent=f1(t[1]);$('cZ').textContent=f1(t[2]);$('cA').textContent=f1(o[0]);$('cB').textContent=f1(o[1]);$('cC').textContent=f1(o[2]);
+  $('sG').textContent=pc.att?'PEÇA PRESA':grip.tgt?(grip.gw>K.GRIP.empty+.1?'FECHANDO':'FECHADA'):(grip.gw<K.GRIP.open-.1?'ABRINDO':'ABERTA');
+  $('sP').textContent=K.graspReady(q,pc)?'PEÇA ALINHADA: PODE FECHAR':'';
   document.querySelectorAll('#rows .jr').forEach((r,i)=>{
     if(mode==='joint'){const l=K.LIM[i];r.querySelector('.ang').textContent=f1(q[i])+'°';
       r.querySelector('.bar i').style.left=((q[i]-l[0])/(l[1]-l[0])*100)+'%';r.classList.toggle('lim',q[i]<=l[0]+1||q[i]>=l[1]-1)}
@@ -256,18 +228,24 @@ const MS=[
   c:()=>[3,4,5].map(i=>[AX[i]+' 20°',mx[i]>=20])},
  {t:'Missão 04: Conhecendo as coordenadas X, Y e Z',x:'Mude para o modo Cartesian e mova a ferramenta pelo menos 80 mm em X, em Y e em Z. Veja os números mudarem na tela.',h:'X vai para a frente do robô, Y para a esquerda e Z para cima. No modo Cartesian a ferramenta anda em linha reta e mantém a orientação.',
   c:()=>['X','Y','Z'].map((n,i)=>[n+' 80 mm',cd[i]>=80])},
- {t:'Missão 05: Levando a ferramenta a uma posição',x:'Leve a ponta da ferramenta até a esfera verde: X 600, Y 150, Z 500 (tolerância de 20 mm).',h:'Use o modo Cartesian. Aproxime um eixo de cada vez e confira X, Y e Z na tela.',
-  c:()=>{const t=K.fk(q).tcp,d=Math.hypot(t[0]-600,t[1]-150,t[2]-500);return[['Distância do alvo: '+Math.round(d)+' mm',d<=20]]}},
- {t:'Missão 06: Gravando pontos e executando uma sequência',x:'Mova o robô, toque em Salvar ponto (P1). Repita para P2 e P3, em posições diferentes. Depois toque em Executar.',h:'O robô vai de ponto em ponto com movimento suave. Para parar a qualquer momento, use STOP.',
-  c:()=>[['3 pontos salvos',pts.length>=3],['Sequência executada',progDone]]}];
+ {t:'Missão 05: Levando a ferramenta a uma posição',x:'Leve a ponta da ferramenta até a esfera verde: X 600, Y 150, Z 600 (tolerância de 20 mm).',h:'Use o modo Cartesian. Aproxime um eixo de cada vez e confira X, Y e Z na tela.',
+  c:()=>{const t=K.fk(q).tcp,d=Math.hypot(t[0]-600,t[1]-150,t[2]-600);return[['Distância do alvo: '+Math.round(d)+' mm',d<=20]]}},
+ {t:'Missão 06: Gravando pontos e executando uma sequência',x:'Mova o robô, toque em Salvar ponto (P1). Repita para P2 e P3, em posições diferentes. Cada ponto guarda também se a garra está aberta ou fechada. Depois toque em Executar.',h:'O robô vai de ponto em ponto com movimento suave. Para parar a qualquer momento, use STOP.',
+  c:()=>[['3 pontos salvos',pts.length>=3],['Sequência executada',progDone]]},
+ {t:'Missão 07: Pegando e levando a peça',x:'Leve a garra, aberta, até a peça azul, com a ferramenta apontando para baixo. Quando aparecer "PEÇA ALINHADA", toque em FECHAR GARRA. Leve a peça até a área verde da bancada e toque em ABRIR GARRA.',h:'No modo Cartesian, use Z− para descer devagar. A peça brilha em verde quando a garra está bem posicionada. Para fazer isso sozinho, grave os pontos com a garra aberta e fechada e toque em Executar.',
+  c:()=>[['Peça pega',grabbed],['Peça solta na área verde',droppedOK]]},
+ {t:'Missão 08: Segurança e alarme de colisão',x:'Um robô de verdade para quando chega perto demais de algo. Habilite o robô, vá para cima da bancada (X+ e Y+) e desça com Z− até o alarme de colisão disparar. Depois toque em HABILITAR para rearmar.',h:'A bancada fica à frente e à esquerda do robô. O alarme dispara a poucos milímetros do tampo. O aviso amarelo "perto da bancada" aparece antes, a 30 mm.',
+  c:()=>[['Alarme disparou',alarmSeen],['Rearmado com HABILITAR',rearmed]]}];
 function track(){for(let i=0;i<6;i++)mx[i]=Math.max(mx[i],Math.abs(q[i]-base.q[i]));const t=K.fk(q).tcp;for(let i=0;i<3;i++)cd[i]=Math.max(cd[i],Math.abs(t[i]-base.tcp[i]))}
-function pickMission(i){mi=i;seen.clear();mx.fill(0);cd.fill(0);base={q:q.slice(),tcp:K.fk(q).tcp.slice()};progDone=false;$('mHint').style.display='none';if(V)V.target.visible=i===4;ui()}
+function pickMission(i){mi=i;seen.clear();mx.fill(0);cd.fill(0);base={q:q.slice(),tcp:K.fk(q).tcp.slice()};progDone=false;grabbed=false;alarmSeen=false;rearmed=false;
+  if(i===6){pc=K.newPiece();grip.tgt=0}
+  $('mHint').style.display='none';M.target.visible=i===4;ui()}
 function missionUI(){
   const m=MS[mi],c=m.c(),ok=c.every(x=>x[1]);if(ok)doneM[mi]=1;
   $('mT').textContent=m.t;$('mX').textContent=m.x;$('mHint').textContent=m.h;
   $('mL').innerHTML=c.map(x=>'<li class="'+(x[1]?'ok':'')+'">'+(x[1]?'✓ ':'○ ')+x[0]+'</li>').join('');
-  $('mFb').textContent=doneM[mi]?(mi<5?'Missão concluída! Muito bem.':'Missão concluída! Você operou o robô do começo ao fim.'):'';
-  $('mNext').disabled=!doneM[mi]||mi>4;
+  $('mFb').textContent=doneM[mi]?(mi<MS.length-1?'Missão concluída! Muito bem.':'Missão concluída! Você operou o robô do começo ao fim.'):'';
+  $('mNext').disabled=!doneM[mi]||mi>=MS.length-1;
   $('mChips').innerHTML=MS.map((_,i)=>'<button type="button" class="btn sm'+(doneM[i]?' ok':'')+'" data-m="'+i+'" aria-current="'+(i===mi)+'" aria-label="Missão '+(i+1)+(doneM[i]?' concluída':'')+'">'+(doneM[i]?'✓ ':'')+(i+1)+'</button>').join('');
 }
 
@@ -282,9 +260,10 @@ window.addEventListener('blur',endJog);
 $('mJ').onclick=()=>setMode('joint');$('mC').onclick=()=>setMode('cart');
 $('spd').oninput=e=>{speed=+e.target.value};
 $('bEn').onclick=toggleEnable;$('bHome').onclick=goHome;$('bRst').onclick=resetPos;$('bStop').onclick=stopAll;
-$('bSave').onclick=savePoint;$('bRun').onclick=runProg;$('bClr').onclick=clearPts;
+$('gOpen').onclick=()=>gripCmd(0);$('gClose').onclick=()=>gripCmd(1);
+$('bSave').onclick=savePoint;$('bRun').onclick=runProg;$('bClr').onclick=clearPts;$('bPeca').onclick=()=>{pc=K.newPiece();setMsg('PEÇA RECOLOCADA','ok')};
 $('mHb').onclick=()=>{const h=$('mHint');h.style.display=h.style.display==='block'?'none':'block'};
-$('mNext').onclick=()=>pickMission(Math.min(5,mi+1));
+$('mNext').onclick=()=>pickMission(Math.min(MS.length-1,mi+1));
 $('mChips').onclick=e=>{const b=e.target.closest('[data-m]');if(b)pickMission(+b.dataset.m)};
 document.querySelector('.pend').addEventListener('contextmenu',e=>e.preventDefault());
 

@@ -64,5 +64,102 @@
     });
     return best ? { q: best } : { err: why || 'FORA DO ALCANCE' };
   }
-  return { G: G, LIM: LIM, HOME: HOME, fk: fk, ik: ik, abc: abc, check: check, n180: n180 };
+
+  /* ---------- célula: bancada, peça, garra e colisão (mm) ---------- */
+  var BENCH = { min: [480, 120, 0], max: [880, 650, 300] };
+  var PEC = { size: 40, half: 20, start: [560, 260, 320], dest: [560, 430, 320] };
+  var GRIP = { open: 50, piece: 26, empty: 6, speed: 60 };
+  var I3 = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
+  function sub(a, b) { return [a[0] - b[0], a[1] - b[1], a[2] - b[2]]; }
+  function distBox(p, b) {
+    return Math.hypot(Math.max(b.min[0] - p[0], 0, p[0] - b.max[0]), Math.max(b.min[1] - p[1], 0, p[1] - b.max[1]), Math.max(b.min[2] - p[2], 0, p[2] - b.max[2]));
+  }
+  function inBox(p, b, m) { return p[0] > b.min[0] + m && p[0] < b.max[0] - m && p[1] > b.min[1] + m && p[1] < b.max[1] - m && p[2] > b.min[2] + m && p[2] < b.max[2] - m; }
+  function newPiece() { return { c: PEC.start.slice(), att: false, off: null, rel: null, fall: false, vz: 0 }; }
+  function pieceWorld(q, pc) {
+    if (pc.att) { var f = fk(q); return { c: add(f.tcp, mv(f.R, pc.off)), R: mul(f.R, pc.rel) }; }
+    return { c: pc.c, R: I3 };
+  }
+  /* a ferramenta está sobre a peça, apontando para baixo, com a ponta dos dedos na altura certa? */
+  function graspReady(q, pc) {
+    if (pc.att || pc.fall) return false;
+    var f = fk(q), t = f.tcp, c = pc.c;
+    return -f.R[2][0] > 0.9 && Math.abs(t[0] - c[0]) < 15 && Math.abs(t[1] - c[1]) < 15 && t[2] >= c[2] - 12 && t[2] <= c[2] + 20;
+  }
+  function attach(q, pc) { var f = fk(q), Rt = tr(f.R); pc.off = mv(Rt, sub(pc.c, f.tcp)); pc.rel = Rt; pc.att = true; }
+  function release(q, pc) { if (!pc.att) return; pc.c = pieceWorld(q, pc).c.slice(); pc.att = false; pc.fall = true; pc.vz = 0; }
+  function support(c) {
+    var on = c[0] >= BENCH.min[0] && c[0] <= BENCH.max[0] && c[1] >= BENCH.min[1] && c[1] <= BENCH.max[1] && c[2] >= BENCH.max[2] - 1;
+    return on ? BENCH.max[2] + PEC.half : PEC.half;
+  }
+  function pieceStep(pc, dt) {
+    if (!pc.fall) return;
+    var sp = support(pc.c); pc.vz += 9810 * dt; pc.c[2] -= pc.vz * dt;
+    if (pc.c[2] <= sp) { pc.c[2] = sp; pc.fall = false; pc.vz = 0; }
+  }
+  function newGrip() { return { gw: GRIP.open, tgt: 0 }; }
+  function gripStep(g, dt, pc, q) {
+    if (g.tgt) {
+      g.gw = Math.max(pc.att ? GRIP.piece : GRIP.empty, g.gw - GRIP.speed * dt);
+      if (!pc.att && g.gw <= GRIP.piece + 0.01 && graspReady(q, pc)) { attach(q, pc); g.gw = GRIP.piece; }
+    } else g.gw = Math.min(GRIP.open, g.gw + GRIP.speed * dt);
+  }
+  function setGrip(g, v, pc, q) { if (v === g.tgt) return; g.tgt = v; if (!v) release(q, pc); }
+  /* colisão: nível 2 = alarme (parar), nível 1 = proximidade (aviso), 0 = livre */
+  function collide(q, gw, pc) {
+    var f = fk(q), W = function (l) { return add(f.wrist, mv(f.R, l)); }, tool = [], fing = [], alarm = null, warn = null;
+    [-1, 1].forEach(function (s) { [160, 190, 220].forEach(function (x) { [-17.5, 0, 17.5].forEach(function (z) { [-6, 0, 6].forEach(function (dy) { fing.push(W([x, s * gw + dy, z])); }); }); }); });
+    [120, 140, 160].forEach(function (x) { [-45, 0, 45].forEach(function (y) { [-25, 25].forEach(function (z) { tool.push(W([x, y, z])); }); }); });
+    [[100, 45, 0], [100, -45, 0], [100, 0, 45], [100, 0, -45]].forEach(function (l) { tool.push(W(l)); });
+    var all = tool.concat(fing), ready = graspReady(q, pc);
+    all.forEach(function (p) {
+      var d = distBox(p, BENCH);
+      if (d < 4) alarm = alarm || 'COLISÃO COM A BANCADA'; else if (d < 30) warn = warn || 'PERTO DA BANCADA';
+    });
+    var links = [[add(f.shoulder, mv(Rz(0), [0, 0, 0])), 90], [[(f.shoulder[0] + f.elbow[0]) / 2, (f.shoulder[1] + f.elbow[1]) / 2, (f.shoulder[2] + f.elbow[2]) / 2], 75], [f.elbow, 75],
+      [[(f.elbow[0] + f.wrist[0]) / 2, (f.elbow[1] + f.wrist[1]) / 2, (f.elbow[2] + f.wrist[2]) / 2], 65], [f.wrist, 60]];
+    links.forEach(function (l) { if (distBox(l[0], BENCH) < l[1]) alarm = alarm || 'COLISÃO COM A BANCADA'; });
+    if (!pc.att) {
+      var pb = { min: [pc.c[0] - PEC.half, pc.c[1] - PEC.half, pc.c[2] - PEC.half], max: [pc.c[0] + PEC.half, pc.c[1] + PEC.half, pc.c[2] + PEC.half] };
+      (ready && gw >= GRIP.piece - 0.01 ? tool : all).forEach(function (p) {
+        if (inBox(p, pb, -3)) alarm = alarm || 'COLISÃO COM A PEÇA'; else if (distBox(p, pb) < 30) warn = warn || 'PERTO DA PEÇA';
+      });
+    } else {
+      var P = pieceWorld(q, pc);
+      [-1, 1].forEach(function (a) { [-1, 1].forEach(function (b) { [-1, 1].forEach(function (c) {
+        var p = add(P.c, mv(P.R, [a * PEC.half, b * PEC.half, c * PEC.half]));
+        if (inBox(p, BENCH, 2)) alarm = alarm || 'COLISÃO DA PEÇA COM A BANCADA';
+        if (p[2] < -1) alarm = alarm || 'COLISÃO DA PEÇA COM O PISO';
+      }); }); });
+    }
+    return alarm ? { level: 2, msg: alarm } : warn ? { level: 1, msg: warn } : { level: 0, msg: '' };
+  }
+  /* demonstração automática (página inicial): pega a peça num ponto e leva ao outro, em linha reta */
+  function Demo() {
+    var Rd = fk(HOME).R, A = [560, 260], B = [560, 430], Z0 = 420, Z1 = 310;
+    var d = { q: HOME.slice(), g: newGrip(), pc: newPiece(), pos: fk(HOME).tcp.slice(), seg: null, plan: null, i: 0, t: 0, p0: null, from: 0, fails: 0 };
+    function plan() {
+      var s = d.from ? B : A, e = d.from ? A : B; d.from = 1 - d.from;
+      return [{ to: [s[0], s[1], Z0], dur: d.pc.c[0] === 0 ? 0.01 : 1.8 }, { to: [s[0], s[1], Z1], dur: 1.1 }, { grip: 1, wait: 0.9 }, { to: [s[0], s[1], Z0], dur: 1.0 },
+        { to: [e[0], e[1], Z0], dur: 1.9 }, { to: [e[0], e[1], Z1], dur: 1.1 }, { grip: 0, wait: 0.9 }, { to: [e[0], e[1], Z0], dur: 1.0 }, { wait: 0.8 }];
+    }
+    d.step = function (dt) {
+      if (!d.seg) {
+        if (!d.plan || d.i >= d.plan.length) { d.plan = plan(); d.i = 0; }
+        d.seg = d.plan[d.i++]; d.t = 0; d.p0 = d.pos.slice();
+        if (d.seg.grip !== undefined) setGrip(d.g, d.seg.grip, d.pc, d.q);
+      }
+      var s = d.seg; d.t += dt;
+      if (s.to) {
+        var u = Math.min(1, d.t / s.dur), e = u * u * (3 - 2 * u);
+        d.pos = [0, 1, 2].map(function (k) { return d.p0[k] + (s.to[k] - d.p0[k]) * e; });
+        var r = ik(d.pos, Rd, d.q); if (r.q) d.q = r.q; else d.fails++;
+        if (u >= 1) d.seg = null;
+      } else if (d.t >= s.wait) d.seg = null;
+      gripStep(d.g, dt, d.pc, d.q); pieceStep(d.pc, dt);
+    };
+    return d;
+  }
+  return { G: G, LIM: LIM, HOME: HOME, BENCH: BENCH, PEC: PEC, GRIP: GRIP, fk: fk, ik: ik, abc: abc, check: check, n180: n180,
+    newPiece: newPiece, pieceWorld: pieceWorld, graspReady: graspReady, pieceStep: pieceStep, newGrip: newGrip, gripStep: gripStep, setGrip: setGrip, collide: collide, Demo: Demo };
 });
