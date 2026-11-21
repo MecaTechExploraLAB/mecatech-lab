@@ -3,19 +3,214 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Laboratório de circuitos elétricos | MecaTech LAB</title>
+<title>Laboratório de circuitos | MecaTech LAB</title>
 <link rel="icon" href="../imagens/logo.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../css/identidade.css">
 <script src="../js/global.js" defer></script>
+<style>
+.lab-main{width:100%;max-width:1000px;margin:0 auto;padding:16px 14px 24px}
+.lab-main h1{font-size:clamp(22px,4vw,32px);margin:0 0 4px}
+.sub{color:var(--mt-mut);margin:0 0 14px}
+.chl{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;background:var(--mt-surf);border:1px solid var(--mt-metal);border-radius:12px;padding:10px 14px;margin-bottom:10px;font-size:14px}
+.chl-info{display:flex;flex-wrap:wrap;align-items:center;gap:8px;flex:1;min-width:220px}
+.chl-act{display:flex;flex-wrap:wrap;gap:6px}
+.sm{min-height:36px;padding:6px 14px;font-size:14px}
+.badge.ok{background:#0b3d2a;border-color:#2ea372;color:#7ef2be}
+#status{background:var(--mt-surf);border:1px solid var(--mt-metal);border-left:3px solid var(--mt-blue);border-radius:12px;padding:10px 14px;margin:0 0 10px;min-height:4.4em}
+#hint{display:none;background:#13203F;border:1px dashed var(--mt-metal2);border-radius:12px;padding:10px 14px;margin:0 0 10px;font-size:14px;color:var(--mt-mut)}
+#stage{display:block;width:100%;height:auto;border:1px solid var(--mt-metal);border-radius:16px;touch-action:none;user-select:none;-webkit-user-select:none}
+.ctl{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:12px 0 4px}
+.ctl span{color:var(--mt-mut);font-size:14px}
+.seg button[aria-pressed="true"]{background:var(--mt-blue);border-color:var(--mt-blue);color:#00131a}
+.vals{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0}
+.val{background:var(--mt-surf);border:1px solid var(--mt-metal);border-radius:12px;padding:8px 10px;text-align:center}
+.val small{display:block;color:var(--mt-mut);font-size:12px}.val b{font-size:20px;color:var(--mt-blue)}
+#ohm{margin:0 0 10px;color:var(--mt-mut);font-size:14px;min-height:1.5em}
+details{background:var(--mt-surf);border:1px solid var(--mt-metal);border-radius:12px;padding:10px 14px;color:var(--mt-mut);font-size:14px}
+summary{cursor:pointer;color:var(--mt-text);font-weight:700}details p{margin:8px 0 0}details b{color:var(--mt-text)}
+</style>
 </head>
 <body data-page="circuitos">
-<main>
-<section class="hero container">
-  <span class="badge">Em desenvolvimento</span>
-  <h1 style="margin-top:14px">Laboratório de circuitos elétricos</h1>
-  <p>Aqui você vai montar circuitos e observar tensão e corrente. Este laboratório ainda está sendo construído. Enquanto isso, o simulador de multímetro já está disponível.</p>
-  <div class="btn-row"><a class="btn btn-primary" href="multimetro.html">Abrir o simulador de multímetro</a><a class="btn" href="../index.html">Voltar ao início</a></div>
-</section>
+<main class="lab-main">
+<h1>Laboratório de circuitos</h1>
+<p class="sub">Para iniciantes: ligue os fios, veja a corrente passar e entenda por quê.</p>
+<div class="chl">
+  <div class="chl-info"><span class="badge" id="cBadge">Desafio 1/3</span><span id="cText"></span></div>
+  <div class="chl-act"><button class="btn sm" id="cHint" type="button">Dica</button><button class="btn sm" id="cNext" type="button">Próximo desafio</button><button class="btn sm" id="cFree" type="button">Modo livre</button></div>
+</div>
+<p id="hint"></p>
+<p id="status" role="status" aria-live="polite"></p>
+<svg id="stage" role="application" aria-label="Bancada com pilha de 9 volts, chave, resistor e LED. Arraste de um terminal a outro para criar fios."><defs>
+<linearGradient id="gB" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#13203F"/><stop offset="1" stop-color="#0A1226"/></linearGradient>
+<pattern id="gG" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" fill="none" stroke="#8bb8e51a"/></pattern>
+<radialGradient id="gM" cx=".35" cy=".3" r=".9"><stop offset="0" stop-color="#f4f6f8"/><stop offset="1" stop-color="#8b939b"/></radialGradient>
+<radialGradient id="gH"><stop offset="0" stop-color="#ff5a4d" stop-opacity=".95"/><stop offset="1" stop-color="#ff5a4d" stop-opacity="0"/></radialGradient>
+<linearGradient id="gBat" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#2d3b47"/><stop offset="1" stop-color="#151c23"/></linearGradient>
+</defs><g id="scene"></g></svg>
+<div class="ctl seg" role="group" aria-label="Valor do resistor"><span>Resistor:</span><span id="opts" style="display:contents"></span><button class="btn sm" id="rst" type="button" style="margin-left:auto">Reiniciar</button></div>
+<div class="vals"><div class="val"><small>Corrente no LED</small><b id="vI">0 mA</b></div><div class="val"><small>Tensão no resistor</small><b id="vR">0 V</b></div><div class="val"><small>Tensão no LED</small><b id="vL">0 V</b></div></div>
+<p id="ohm"></p>
+<details><summary>Entenda os conceitos</summary>
+<p><b>Tensão (V, volts):</b> a "força" que empurra a corrente. A pilha entrega 9 V.</p>
+<p><b>Corrente (A, amperes):</b> a quantidade de carga que passa por segundo. Num LED comum usamos poucos miliamperes (mA).</p>
+<p><b>Resistência (Ω, ohms):</b> o quanto o componente dificulta a passagem. Lei de Ohm: <b>V = R × I</b>.</p>
+<p><b>Por que o resistor?</b> O LED quase não resiste sozinho. Sem resistor, passa corrente demais e ele queima.</p></details>
+<p class="sub" style="margin-top:14px">Quer medir de verdade? Use o <a href="multimetro.html">simulador de multímetro</a>.</p>
 </main>
+<script>
+const NS='http://www.w3.org/2000/svg',svg=document.getElementById('stage'),sc=document.getElementById('scene'),$=i=>document.getElementById(i),FONT='"Chakra Petch",Arial,sans-serif';
+const E=(t,a,p,x)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);if(x!=null)e.textContent=x;(p||sc).appendChild(e);return e};
+const OPT=[100,330,1000,10000],FM={100:'100 Ω',330:'330 Ω',1000:'1 kΩ',10000:'10 kΩ'},BD={100:[1,0,1],330:[3,3,1],1000:[1,0,2],10000:[1,0,3]},BC=['#111','#7a3b12','#d33','#f08a24'];
+const CH=[
+ {t:'Acenda o LED.',d:'Ligue o + da pilha, o resistor, o LED e volte ao − da pilha. A corrente só passa em caminho fechado.',h:'Arraste de um círculo até outro para criar um fio. Sugestão: + da pilha ao resistor, resistor ao + do LED, − do LED ao − da pilha. Toque num fio para apagá-lo.'},
+ {t:'Ligue e desligue com a chave.',d:'Ponha a chave no caminho, acenda o LED e depois desligue a chave.',h:'Faça: + da pilha, chave, resistor, LED, − da pilha. Toque na alavanca da chave para abrir e fechar.'},
+ {t:'Escolha o resistor certo.',d:'Monte o circuito e teste os valores. Procure entre 12 e 25 mA: LED forte, sem queimar.',h:'100 Ω deixa passar corrente demais e queima o LED. 10 kΩ quase o apaga. Qual valor fica no meio?'}];
+let L,T,els,R=330,sw=true,burned=false,burnI=0,wires=[],sel=null,drag=null,ch=0,free=false,done=[0,0,0],st={},cur={};
+const showSw=()=>free||ch>0,vis=t=>!t.sw||showSw();
+
+function init(){
+  const p=innerWidth<760;
+  L=p?{w:400,h:400,b:[40,30],s:[240,40],r:[40,250],l:[250,200]}:{w:720,h:340,b:[60,100],s:[250,30],r:[270,230],l:[560,100]};
+  T=[['bp','b',24,18,'+'],['bm','b',66,18,'−'],['s1','s',16,28,''],['s2','s',104,28,''],['r1','r',12,25,''],['r2','r',118,25,''],['la','l',24,106,'+'],['lk','l',66,106,'−']]
+   .map(([id,o,x,y,s])=>({id,x:L[o][0]+x,y:L[o][1]+y,s,sw:id[0]==='s'}));
+  svg.setAttribute('viewBox','0 0 '+L.w+' '+L.h);build();render();
+}
+function build(){
+  sc.replaceChildren();els={};
+  E('rect',{width:L.w,height:L.h,fill:'url(#gB)'});E('rect',{width:L.w,height:L.h,fill:'url(#gG)'});
+  const tx=(x,y,s,sz,fill,anc)=>E('text',{x,y,'text-anchor':anc||'middle','font-size':sz,'font-weight':700,fill,'font-family':FONT},null,s);
+  /* pilha */
+  const b=E('g',{transform:'translate('+L.b+')'});
+  E('rect',{width:90,height:130,rx:10,fill:'url(#gBat)'},b);E('rect',{width:90,height:44,rx:10,fill:'#3a4753'},b);
+  E('text',{x:45,y:100,'text-anchor':'middle','font-size':30,'font-weight':700,fill:'#f9c823','font-family':FONT},b,'9 V');
+  E('text',{x:45,y:122,'text-anchor':'middle','font-size':11,fill:'#9fb0bd','font-family':FONT},b,'Pilha');
+  /* chave */
+  els.sg=E('g',{transform:'translate('+L.s+')'});
+  E('rect',{width:120,height:56,rx:10,fill:'#13203F',stroke:'#3B6998','stroke-width':2,'data-sw':1,style:'cursor:pointer'},els.sg);
+  els.lv=E('line',{x1:16,y1:28,'stroke-width':7,'stroke-linecap':'round',stroke:'#f1f5f9','data-sw':1,style:'cursor:pointer'},els.sg);
+  E('text',{x:60,y:76,'text-anchor':'middle','font-size':11,fill:'#94A3B8','font-family':FONT},els.sg,'Chave (toque)');
+  /* resistor */
+  const r=E('g',{transform:'translate('+L.r+')'});
+  E('line',{x1:12,y1:25,x2:118,y2:25,stroke:'#8b939b','stroke-width':4},r);
+  E('rect',{x:24,y:10,width:82,height:30,rx:9,fill:'#d9c7a0'},r);
+  els.bd=[0,1,2].map(i=>E('rect',{x:40+i*18,y:10,width:7,height:30,fill:'#000'},r));
+  els.rl=E('text',{x:65,y:64,'text-anchor':'middle','font-size':13,'font-weight':700,fill:'#F1F5F9','font-family':FONT},r);
+  /* LED */
+  const d=E('g',{transform:'translate('+L.l+')'});
+  E('path',{d:'M24 70V106M66 70V106',stroke:'#8b939b','stroke-width':4,fill:'none'},d);
+  E('rect',{x:10,y:58,width:70,height:14,rx:4,fill:'#e9eef0'},d);
+  els.halo=E('circle',{cx:45,cy:34,r:62,fill:'url(#gH)',opacity:0},d);
+  E('circle',{cx:45,cy:34,r:28,fill:'#8c1c28'},d);
+  els.led=E('circle',{cx:45,cy:34,r:28,fill:'#ff6a5c',opacity:0},d);
+  E('ellipse',{cx:36,cy:24,rx:8,ry:5,fill:'#ffffff55'},d);
+  els.bn=E('path',{d:'M30 20L60 48M60 20L30 48',stroke:'#1a1a1a','stroke-width':5,'stroke-linecap':'round',opacity:0},d);
+  E('text',{x:45,y:124,'text-anchor':'middle','font-size':12,'font-weight':700,fill:'#F1F5F9','font-family':FONT},d,'LED');
+  els.wl=E('g',{});
+  els.rb=E('line',{stroke:'#00D4FF','stroke-width':4,'stroke-dasharray':'6 5','stroke-linecap':'round',opacity:0});
+  els.tr={};
+  T.forEach(t=>{const q=E('g',{});
+    E('circle',{cx:t.x,cy:t.y,r:14,fill:'url(#gM)',stroke:'#20262b','stroke-width':2},q);E('circle',{cx:t.x,cy:t.y,r:5,fill:'#1a1f23'},q);
+    if(t.s)E('text',{x:t.x,y:t.y+(t.id[0]==='l'?-20:36),'text-anchor':'middle','font-size':16,'font-weight':700,fill:'#fff','font-family':FONT},q,t.s);
+    els.tr[t.id]=[q,E('circle',{cx:t.x,cy:t.y,r:19,fill:'none',stroke:'#ffd23f','stroke-width':3,opacity:0},q)]});
+}
+
+function solve(swap){
+  const par={},f=x=>{if(par[x]===undefined)par[x]=x;return par[x]===x?x:(par[x]=f(par[x]))},u=(a,b)=>{par[f(a)]=f(b)};
+  const ids=T.map(t=>t.id);ids.forEach(f);
+  if(sw&&showSw())u('s1','s2');
+  wires.forEach(w=>u(w[0],w[1]));
+  const roots=[...new Set(ids.map(f))],ix={};roots.forEach((r,i)=>ix[r]=i);const n=roots.length,N=id=>ix[f(id)];
+  const gnd=N('bm'),ca=N(swap?'lk':'la'),cc=N(swap?'la':'lk'),gb=2,VF=2,RD=20;
+  let on=false,V=[];
+  for(let k=0;k<8;k++){
+    const A=Array.from({length:n},()=>Array(n).fill(0)),B=Array(n).fill(0);
+    const g=(i,j,c)=>{A[i][i]+=c;A[j][j]+=c;A[i][j]-=c;A[j][i]-=c};
+    g(N('bp'),N('bm'),gb);B[N('bp')]+=9*gb;B[N('bm')]-=9*gb;
+    g(N('r1'),N('r2'),1/R);
+    if(on&&!burned){g(ca,cc,1/RD);B[ca]+=VF/RD;B[cc]-=VF/RD}else g(ca,cc,1e-9);
+    for(let i=0;i<n;i++)A[i][i]+=1e-9;
+    A[gnd]=Array(n).fill(0);A[gnd][gnd]=1;B[gnd]=0;
+    for(let c=0;c<n;c++){let m=c;for(let r=c+1;r<n;r++)if(Math.abs(A[r][c])>Math.abs(A[m][c]))m=r;
+      [A[c],A[m]]=[A[m],A[c]];[B[c],B[m]]=[B[m],B[c]];
+      for(let r=c+1;r<n;r++){const q=A[r][c]/A[c][c];for(let j=c;j<n;j++)A[r][j]-=q*A[c][j];B[r]-=q*B[c]}}
+    V=Array(n).fill(0);for(let r=n-1;r>=0;r--){let s=B[r];for(let j=r+1;j<n;j++)s-=A[r][j]*V[j];V[r]=s/A[r][r]}
+    const nOn=V[ca]-V[cc]>VF;if(k>0&&nOn===on)break;on=nOn;
+  }
+  const iL=on&&!burned?(V[ca]-V[cc]-VF)/RD:0;
+  return{iL,vR:Math.abs(V[N('r1')]-V[N('r2')]),vL:on&&!burned?V[ca]-V[cc]:0,iB:(9-(V[N('bp')]-V[N('bm')]))*gb};
+}
+const fmt=(x,d)=>x.toFixed(d).replace('.',',');
+const mA=a=>a<0.0095?fmt(a*1000,1)+' mA':fmt(a*1000,0)+' mA';
+
+function render(){
+  let r=solve(false);
+  if(!burned&&r.iL>0.03){burned=true;burnI=r.iL;r=solve(false)}
+  const lit=!burned&&r.iL>0.0005,short=r.iB>1;
+  const rev=!lit&&!burned&&!short&&solve(true).iL>0.0005;
+  cur={r,lit,burned};
+  /* peças */
+  els.sg.setAttribute('display',showSw()?'':'none');
+  els.lv.setAttribute('x2',sw?104:92);els.lv.setAttribute('y2',sw?28:2);
+  els.bd.forEach((e,i)=>e.setAttribute('fill',BC[BD[R][i]]));els.rl.textContent=FM[R];
+  const br=lit?Math.min(1,Math.sqrt(r.iL/0.02)):0;
+  els.led.setAttribute('opacity',br);els.halo.setAttribute('opacity',br*.9);els.bn.setAttribute('opacity',burned?1:0);
+  /* fios */
+  els.wl.replaceChildren();
+  const act=lit&&!short;
+  wires.forEach((w,i)=>{const a=T.find(t=>t.id===w[0]),b=T.find(t=>t.id===w[1]),k=40+.25*Math.hypot(a.x-b.x,a.y-b.y),
+    d='M'+a.x+' '+a.y+'C'+a.x+' '+(a.y+k)+' '+b.x+' '+(b.y+k)+' '+b.x+' '+b.y;
+    E('path',{d,fill:'none',stroke:'#050912','stroke-width':10,'stroke-linecap':'round'},els.wl);
+    E('path',{d,fill:'none',stroke:act?'#00D4FF':'#7f93ad','stroke-width':6,'stroke-linecap':'round'},els.wl);
+    E('path',{d,fill:'none',stroke:'transparent','stroke-width':22,'stroke-linecap':'round','data-w':i,style:'cursor:pointer'},els.wl)});
+  T.forEach(t=>{els.tr[t.id][0].setAttribute('display',vis(t)?'':'none');els.tr[t.id][1].setAttribute('opacity',sel===t.id?1:0)});
+  if(drag&&drag.moved){const a=T.find(t=>t.id===drag.a);['x1','y1'].forEach((k,i)=>els.rb.setAttribute(k,i?a.y:a.x));els.rb.setAttribute('x2',drag.x);els.rb.setAttribute('y2',drag.y);els.rb.setAttribute('opacity',1)}else els.rb.setAttribute('opacity',0);
+  /* textos */
+  $('vI').textContent=mA(r.iL);$('vR').textContent=fmt(r.vR,1)+' V';$('vL').textContent=fmt(r.vL,1)+' V';
+  $('ohm').textContent=r.iL>0.0005&&!burned?'Lei de Ohm no resistor: V = R × I → '+fmt(r.vR,1)+' V = '+FM[R]+' × '+mA(r.iL)+'. Pilha 9 V ≈ '+fmt(r.vR,1)+' V (resistor) + '+fmt(r.vL,1)+' V (LED).':'';
+  $('status').textContent=short?'Curto-circuito: um fio liga + e − da pilha sem nada no caminho. Passa corrente enorme e a pilha esquentaria. Apague esse fio.':
+    burned?'O LED queimou: passaram cerca de '+mA(burnI)+', e ele aguenta uns 30 mA. Com um resistor maior a corrente cai. Toque em Reiniciar para trocar de LED.':
+    lit?'Circuito fechado! Passam '+mA(r.iL)+' pelo LED, e ele acende'+(r.iL<0.003?' fraquinho: o resistor está grande e limita demais.':r.iL>0.025?' forte demais, perto do limite.':'.'):
+    rev?'Quase: o LED só deixa a corrente passar num sentido. Ligue o lado + dele (perna longa) ao lado da pilha que vem do +.':
+    'Circuito aberto: ainda não há caminho fechado. Ligue + da pilha, resistor, LED e volte ao − da pilha.';
+  $('opts').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.r===R)));
+  challenge();
+}
+function challenge(){
+  const c=CH[ch],r=cur.r;
+  if(!free&&!done[ch]){
+    if(ch===0&&cur.lit)done[ch]=1;
+    if(ch===1){if(cur.lit&&sw)st.lit=1;if(st.lit&&!sw&&!cur.lit&&!cur.burned)done[ch]=1}
+    if(ch===2&&!cur.burned&&r.iL>=0.012&&r.iL<=0.025)done[ch]=1;
+  }
+  $('cBadge').textContent=free?'Modo livre':'Desafio '+(ch+1)+'/3'+(done[ch]?' ✓':'');
+  $('cBadge').className='badge'+(free||done[ch]?' ok':'');
+  $('cText').textContent=free?'Monte do seu jeito com todas as peças.':c.t+' '+c.d;
+  $('cNext').style.display=free?'none':'';$('cNext').textContent=done[ch]&&ch===2?'Ver desafio 1':'Próximo desafio';
+  $('cFree').textContent=free?'Voltar aos desafios':'Modo livre';$('cHint').style.display=free?'none':'';
+  $('hint').textContent=c.h;
+}
+function reset(){wires=[];sel=null;drag=null;burned=false;sw=true;st={};render()}
+function addWire(a,b){if(a===b||wires.some(w=>(w[0]===a&&w[1]===b)||(w[0]===b&&w[1]===a))||wires.length>=14)return;wires.push([a,b])}
+
+const pt=e=>new DOMPoint(e.clientX,e.clientY).matrixTransform(svg.getScreenCTM().inverse());
+function hit(p){let best=null,d=26;T.forEach(t=>{if(!vis(t))return;const k=Math.hypot(t.x-p.x,t.y-p.y);if(k<d){d=k;best=t.id}});return best}
+svg.addEventListener('pointerdown',e=>{
+  const p=pt(e),t=hit(p);
+  if(t){if(sel&&sel!==t){addWire(sel,t);sel=null;drag=null}else{drag={a:t,x:p.x,y:p.y,moved:false};sel=t;svg.setPointerCapture(e.pointerId)}e.preventDefault();render();return}
+  const w=e.target.closest('[data-w]');if(w){wires.splice(+w.dataset.w,1);sel=null;render();return}
+  if(e.target.closest('[data-sw]')){sw=!sw;render();return}
+  sel=null;render();
+});
+svg.addEventListener('pointermove',e=>{if(!drag)return;const p=pt(e);drag.x=p.x;drag.y=p.y;drag.moved=true;render()});
+function drop(){if(!drag)return;const t=hit(drag);if(drag.moved){if(t&&t!==drag.a)addWire(drag.a,t);sel=null}drag=null;render()}
+svg.addEventListener('pointerup',drop);svg.addEventListener('pointercancel',drop);
+OPT.forEach(v=>{const b=document.createElement('button');b.type='button';b.className='btn sm';b.dataset.r=v;b.textContent=FM[v];b.onclick=()=>{R=v;render()};$('opts').appendChild(b)});
+$('rst').onclick=reset;
+$('cHint').onclick=()=>{const h=$('hint');h.style.display=h.style.display==='block'?'none':'block'};
+$('cNext').onclick=()=>{ch=(ch+1)%3;st={};$('hint').style.display='none';reset()};
+$('cFree').onclick=()=>{free=!free;$('hint').style.display='none';reset()};
+matchMedia('(max-width:759px)').addEventListener('change',init);
+init();
+</script>
 </body>
 </html>
