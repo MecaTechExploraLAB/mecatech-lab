@@ -129,7 +129,7 @@ function buildRobot(W){
   const fl=new THREE.Mesh(new THREE.PlaneGeometry(4,4),M(0x121b2b,0,.9));fl.receiveShadow=true;W.add(fl);
   const gr=new THREE.GridHelper(4,20,0x1e3a5f,0x16253d);gr.rotation.x=H;gr.position.z=.001;W.add(gr);
   const hz=new THREE.Mesh(new THREE.RingGeometry(1.02,1.08,72),new THREE.MeshBasicMaterial({color:0xf9c823}));hz.position.z=.003;W.add(hz);
-  add(bx(.5,.7,.45),M(0x3a4756,.4,.6),W,.62,-.55,.225);add(bx(.52,.72,.03),GR,W,.62,-.55,.465);
+  add(bx(.5,.7,.45),M(0x3a4756,.4,.6),W,.62,.55,.225);add(bx(.52,.72,.03),GR,W,.62,.55,.465);
   const ax=new THREE.AxesHelper(.3);ax.position.set(-.32,-.32,.032);W.add(ax);
   lab('X',W,-.0,-.32,.032,'#ff5a5a');lab('Y',W,-.32,-.02,.032,'#59f0a8');lab('Z',W,-.32,-.32,.34,'#6fa8ff');
   /* base e eixo A1 */
