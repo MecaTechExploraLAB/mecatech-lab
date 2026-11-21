@@ -10,6 +10,7 @@
     ['circuitos', 'laboratorios/circuitos.html', 'Circuitos'],
     ['componentes', 'laboratorios/componentes.html', 'Componentes'],
     ['diagnostico', 'laboratorios/diagnostico.html', 'Diagnóstico'],
+    ['robotica', 'laboratorios/robotica.html', 'Robótica'],
     ['produtos', 'produtos/index.html', 'Materiais e Cursos']
   ];
   var current = document.body.getAttribute('data-page');
@@ -58,11 +59,11 @@
   nav.addEventListener('click', function (e) { if (e.target.closest('a')) setMenu(false); });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') setMenu(false); });
   document.addEventListener('click', function (e) { if (!header.contains(e.target)) setMenu(false); });
-  window.addEventListener('resize', function () { if (window.innerWidth > 1140) setMenu(false); });
+  window.addEventListener('resize', function () { if (window.innerWidth > 1230) setMenu(false); });
 
   /* rodapé */
   var footer = el('footer', { 'class': 'mt-footer' });
-  var labs = PAGES.slice(1, 5).map(function (p) { return '<a href="' + ROOT + p[1] + '">' + p[2] + '</a>'; }).join('');
+  var labs = PAGES.slice(1, 6).map(function (p) { return '<a href="' + ROOT + p[1] + '">' + p[2] + '</a>'; }).join('');
   footer.innerHTML =
     '<div class="mt-foot">' +
     '<div><strong>MecaTech LAB</strong><p>Laboratórios virtuais gratuitos de eletrônica e mecatrônica, do canal MecaTechExplora.</p></div>' +
