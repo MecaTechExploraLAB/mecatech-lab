@@ -34,11 +34,13 @@ summary{cursor:pointer;color:var(--mt-text);font-weight:700}details p{margin:8px
 <main class="lab-main">
 <h1>Laboratório de circuitos</h1>
 <p class="sub">Para iniciantes: ligue os fios, veja a corrente passar e entenda por quê.</p>
+<p id="coach" class="coach" role="status" aria-live="polite"></p>
 <div class="chl">
   <div class="chl-info"><span class="badge" id="cBadge">Desafio 1/3</span><span id="cText"></span></div>
-  <div class="chl-act"><button class="btn sm" id="cHint" type="button">Dica</button><button class="btn sm" id="cNext" type="button">Próximo desafio</button><button class="btn sm" id="cFree" type="button">Modo livre</button></div>
+  <div class="chl-act"><button class="btn sm" id="cHint" type="button">Dica</button><button class="btn sm" id="cNext" type="button">Próximo desafio</button><button class="btn sm" id="cFree" type="button">Modo livre</button><button class="btn sm" id="cCert" type="button" style="display:none">Ver meu certificado</button></div>
 </div>
 <p id="hint"></p>
+<small class="nota">Ao concluir os 3 desafios, você recebe um certificado de conclusão.</small>
 <p id="status" role="status" aria-live="polite"></p>
 <svg id="stage" role="application" aria-label="Bancada com pilha de 9 volts, chave, resistor e LED. Arraste de um terminal a outro para criar fios."><defs>
 <linearGradient id="gB" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#13203F"/><stop offset="1" stop-color="#0A1226"/></linearGradient>
@@ -57,7 +59,9 @@ summary{cursor:pointer;color:var(--mt-text);font-weight:700}details p{margin:8px
 <p><b>Por que o resistor?</b> O LED quase não resiste sozinho. Sem resistor, passa corrente demais e ele queima.</p></details>
 <p class="sub" style="margin-top:14px">Quer medir de verdade? Use o <a href="multimetro.html">simulador de multímetro</a>.</p>
 </main>
+<script src="../js/aprendizado.js"></script>
 <script>
+const F=MTA.fmt,ann=[0,0,0];let certShown=false,avisouQueima=false;
 const NS='http://www.w3.org/2000/svg',svg=document.getElementById('stage'),sc=document.getElementById('scene'),$=i=>document.getElementById(i),FONT='"Chakra Petch",Arial,sans-serif';
 const E=(t,a,p,x)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);if(x!=null)e.textContent=x;(p||sc).appendChild(e);return e};
 const OPT=[100,330,1000,10000],FM={100:'100 Ω',330:'330 Ω',1000:'1 kΩ',10000:'10 kΩ'},BD={100:[1,0,1],330:[3,3,1],1000:[1,0,2],10000:[1,0,3]},BC=['#111','#7a3b12','#d33','#f08a24'];
@@ -144,7 +148,7 @@ const mA=a=>a<0.0095?fmt(a*1000,1)+' mA':fmt(a*1000,0)+' mA';
 
 function render(){
   let r=solve(false);
-  if(!burned&&r.iL>0.03){burned=true;burnI=r.iL;r=solve(false)}
+  if(!burned&&r.iL>0.03){burned=true;burnI=r.iL;if(!avisouQueima){avisouQueima=true;coach(F('Sem problema, {n}: o LED queimou porque passou corrente demais. Toque em Reiniciar para tentar de novo.'))}r=solve(false)}
   const lit=!burned&&r.iL>0.0005,short=r.iB>1;
   const rev=!lit&&!burned&&!short&&solve(true).iL>0.0005;
   cur={r,lit,burned};
@@ -188,8 +192,13 @@ function challenge(){
   $('cNext').style.display=free?'none':'';$('cNext').textContent=done[ch]&&ch===2?'Ver desafio 1':'Próximo desafio';
   $('cFree').textContent=free?'Voltar aos desafios':'Modo livre';$('cHint').style.display=free?'none':'';
   $('hint').textContent=c.h;
+  if(done[ch]&&!ann[ch]){ann[ch]=1;coach(F('Muito bem, {n}! Desafio '+(ch+1)+' concluído.'))}
+  const todos=done.every(Boolean);$('cCert').style.display=todos?'':'none';
+  if(todos&&!certShown){certShown=true;showCert()}
 }
-function reset(){wires=[];sel=null;drag=null;burned=false;sw=true;st={};render()}
+function coach(t){$('coach').textContent=t}
+function showCert(){MTA.certificado({titulo:'Laboratório de Circuitos Elétricos',texto:'concluiu os 3 desafios do laboratório de circuitos: LED com resistor, chave liga e desliga e escolha do resistor correto.'})}
+function reset(){avisouQueima=false;wires=[];sel=null;drag=null;burned=false;sw=true;st={};render()}
 function addWire(a,b){if(a===b||wires.some(w=>(w[0]===a&&w[1]===b)||(w[0]===b&&w[1]===a))||wires.length>=14)return;wires.push([a,b])}
 
 const pt=e=>new DOMPoint(e.clientX,e.clientY).matrixTransform(svg.getScreenCTM().inverse());
@@ -210,7 +219,9 @@ $('cHint').onclick=()=>{const h=$('hint');h.style.display=h.style.display==='blo
 $('cNext').onclick=()=>{ch=(ch+1)%3;st={};$('hint').style.display='none';reset()};
 $('cFree').onclick=()=>{free=!free;$('hint').style.display='none';reset()};
 matchMedia('(max-width:759px)').addEventListener('change',init);
+$('cCert').onclick=showCert;
 init();
+coach(F('{n}, siga os desafios abaixo ou use o modo livre.'));
 </script>
 <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "f125d56c27d24f99a3ac41567d6e7537"}'></script><!-- End Cloudflare Web Analytics -->
 </body>

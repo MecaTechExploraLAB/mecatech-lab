@@ -8,6 +8,9 @@
 <link rel="icon" href="imagens/logo.svg" type="image/svg+xml">
 <link rel="stylesheet" href="css/identidade.css">
 <script src="js/global.js" defer></script>
+<script src="js/config.js"></script>
+<script src="js/aprendizado.js"></script>
+<script src="js/boas-vindas.js" defer></script>
 <script src="js/home-demo.js" defer></script>
 <style>
 .hero2{display:grid;grid-template-columns:1fr 1fr;gap:34px;align-items:center;padding:52px 16px 28px}
@@ -37,13 +40,14 @@
 <main>
 <section class="hero2 container">
   <div>
+    <p class="saud" id="saud" hidden></p>
     <h1>Laboratórios virtuais de eletrônica e mecatrônica, <em>de graça.</em></h1>
     <p>Pratique no celular ou no computador: meça tensão, teste continuidade, monte circuitos e opere um robô industrial de 6 eixos sem queimar nenhum componente.</p>
     <div class="btn-row">
       <a class="btn btn-primary" href="laboratorios/robotica.html">Operar o robô</a>
       <a class="btn" href="#laboratorios">Ver os laboratórios</a>
     </div>
-    <ul class="chips"><li>100% gratuito</li><li>Sem cadastro</li><li>6 eixos A1 a A6</li><li>Joint e Cartesian</li><li>Garra e peça</li><li>Alarme de colisão</li><li>8 missões</li></ul>
+    <ul class="chips"><li>100% gratuito</li><li>6 eixos A1 a A6</li><li>Joint e Cartesian</li><li>Garra e peça</li><li>Alarme de colisão</li><li>8 missões</li></ul>
   </div>
   <div class="hero3d" id="hero3d" role="img" aria-label="Demonstração em 3D: o robô industrial pega uma peça e a leva para outro ponto da bancada">
     <div id="heroCv"></div>
@@ -53,7 +57,7 @@
 </section>
 <section class="section container" id="laboratorios">
   <h2>Laboratórios</h2>
-  <p class="lead">Todos gratuitos, sem cadastro. Escolha por onde começar.</p>
+  <p class="lead">Todos gratuitos. Escolha por onde começar.</p>
   <div class="labs">
     <a class="card star" href="laboratorios/robotica.html"><span class="badge hot">Destaque</span><h3>Robótica industrial 3D</h3>
       <p>Opere um robô articulado de 6 eixos pelo Teach Pendant, como numa célula industrial real.</p>

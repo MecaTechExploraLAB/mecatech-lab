@@ -64,6 +64,10 @@
 #mL li{padding:4px 12px;border-radius:999px;border:1px solid var(--mt-metal2);font-size:13px;color:var(--mt-mut)}#mL li.ok{background:#0b3d2a;border-color:#2ea372;color:#7ef2be}
 #mFb{font-weight:700;color:#7ef2be;min-height:1.4em;margin:0 0 8px}
 .mact{display:flex;gap:8px;flex-wrap:wrap}.mact .btn{min-height:40px;padding:6px 14px;font-size:14px}
+
+.miss-h{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}.miss-h h2{margin:0}.miss-h .nota{margin:2px 0 0}
+.miss-h .seg{display:flex;gap:6px;flex-wrap:wrap}.miss-h .seg .btn{min-height:36px;padding:4px 12px;font-size:13px}
+.free-msg{display:none;margin:0 0 6px;color:var(--mt-mut)}#bCert{display:none}
 @media(max-width:900px){.robo-grid{grid-template-columns:1fr}
  .view{position:sticky;top:60px;z-index:5;height:auto;min-height:0;aspect-ratio:4/3.2}}
 @media (prefers-reduced-motion:reduce){#alarm{animation:none}}
@@ -73,6 +77,7 @@
 <main class="lab-main">
 <h1>Laboratório de robótica industrial</h1>
 <p class="sub">Opere um robô de 6 eixos pelo Teach Pendant virtual. Pegue a peça com a garra e leve até a área verde. Gire a câmera arrastando.</p>
+<p id="coach" class="coach" role="status" aria-live="polite"></p>
 <p class="aviso" role="note"><b>Simulador educacional.</b> Estes comandos não controlam nenhum equipamento físico. O robô é didático, inspirado na robótica industrial, e não reproduz um modelo específico.</p>
 <div class="robo-grid">
   <section class="view" aria-label="Robô industrial em 3D">
@@ -105,17 +110,24 @@
   </aside>
 </div>
 <section class="miss" aria-label="Missões">
-  <h2>Missões</h2><div id="mChips"></div>
-  <h3 id="mT" style="margin:0 0 6px;font-size:17px"></h3><p id="mX"></p><p id="mHint"></p>
-  <ul id="mL"></ul><p id="mFb" role="status" aria-live="polite"></p>
-  <div class="mact"><button class="btn" id="mHb" type="button">Dica</button><button class="btn btn-primary" id="mNext" type="button" disabled>Próxima missão</button></div>
+  <div class="miss-h"><div><h2 id="mH2">Missões</h2><small class="nota">Ao concluir as 8 missões, você recebe um certificado de conclusão.</small></div>
+    <div class="seg" role="group" aria-label="Modo"><button class="btn" id="tMis" aria-pressed="true" type="button">Missões</button><button class="btn" id="tLiv" aria-pressed="false" type="button">Modo livre</button><button class="btn" id="bAjuda" type="button">Como usar</button></div></div>
+  <p class="free-msg" id="freeMsg"></p>
+  <div id="misBody">
+    <div id="mChips"></div>
+    <h3 id="mT" style="margin:0 0 6px;font-size:17px"></h3><p id="mX"></p><p id="mHint"></p>
+    <ul id="mL"></ul><p id="mFb" role="status" aria-live="polite"></p>
+    <div class="mact"><button class="btn" id="mHb" type="button">Dica</button><button class="btn btn-primary" id="mNext" type="button" disabled>Próxima missão</button><button class="btn" id="bCert" type="button">Ver meu certificado</button></div>
+  </div>
 </section>
 </main>
+<script src="../js/aprendizado.js"></script>
 <script src="../js/vendor/three.min.js"></script>
 <script src="../js/vendor/OrbitControls.js"></script>
 <script src="../js/robo-cinematica.js"></script>
 <script src="../js/robo-modelo.js"></script>
 <script>
+const F=MTA.fmt;let free=false,certShown=false;
 const K=RoboCin,$=i=>document.getElementById(i),AX=['A1','A2','A3','A4','A5','A6'];
 let q=K.HOME.slice(),enabled=false,stopped=false,mode='joint',sel=0,speed=40,motion=null,prog=null,jog=null,ct=null,pts=[],progDone=false,mi=0,V=null;
 let grip=K.newGrip(),pc=K.newPiece(),alarm=false,alarmSeen=false,rearmed=false,colWarn='',grabbed=false,droppedOK=false,actx=null;
@@ -160,7 +172,7 @@ function startMotion(to,done){const m=Math.max(...to.map((v,i)=>Math.abs(v-q[i])
   if(m<.01){done&&done();return}motion={from:q.slice(),to:to.slice(),t:0,dur:Math.max(.5,m/(speed*1.5)),done};setMsg('EXECUTANDO MOVIMENTO','')}
 function triggerAlarm(pq,pgw,why){
   q=pq;grip.gw=pgw;motion=null;prog=null;jog=null;ct=null;enabled=false;stopped=true;alarm=true;alarmSeen=true;
-  setMsg('ALARME: '+why,'err');$('alarmT').textContent='ALARME DE COLISÃO: '+why.replace('COLISÃO ','');$('alarm').classList.add('on');beep();renderPts()}
+  setMsg('ALARME: '+why,'err');$('alarmT').textContent='ALARME DE COLISÃO: '+why.replace('COLISÃO ','');$('alarm').classList.add('on');beep();coach(F('Atenção, {n}: o robô parou por segurança. Toque em HABILITAR para rearmar e afaste a ferramenta.'));renderPts()}
 function step(dt){
   const pq=q.slice(),pgw=grip.gw;
   if(motion){motion.t+=dt;const s=Math.min(1,motion.t/motion.dur),e=s*s*(3-2*s),m=motion;q=m.from.map((a,i)=>a+(m.to[i]-a)*e);if(s>=1){motion=null;m.done&&m.done()}}
@@ -175,7 +187,7 @@ function step(dt){
 function stopAll(){motion=null;prog=null;jog=null;ct=null;enabled=false;stopped=true;setMsg('STOP: MOVIMENTO INTERROMPIDO','err');renderPts()}
 function toggleEnable(){
   if(enabled){motion=null;prog=null;jog=null;ct=null;enabled=false;setMsg('MOVIMENTO DESABILITADO','')}
-  else{enabled=true;stopped=false;if(alarm){alarm=false;rearmed=true;$('alarm').classList.remove('on');setMsg('ALARME REARMADO: AFASTE A FERRAMENTA','ok')}else setMsg('MOVIMENTO HABILITADO','ok')}
+  else{enabled=true;stopped=false;if(alarm){alarm=false;rearmed=true;$('alarm').classList.remove('on');setMsg('ALARME REARMADO: AFASTE A FERRAMENTA','ok');coach(F('Tudo certo, {n}. Agora afaste a ferramenta com cuidado.'))}else setMsg('MOVIMENTO HABILITADO','ok')}
   renderPts()}
 function goHome(){if(!canMove())return;if(motion||prog)return;startMotion(K.HOME,()=>setMsg('HOME ATINGIDO','ok'))}
 function resetPos(){motion=null;prog=null;jog=null;ct=null;q=K.HOME.slice();grip=K.newGrip();pc=K.newPiece();alarm=false;$('alarm').classList.remove('on');setMsg('CÉLULA REINICIADA','ok');renderPts();updateModel()}
@@ -215,7 +227,7 @@ function ui(){
     if(mode==='joint'){const l=K.LIM[i];r.querySelector('.ang').textContent=f1(q[i])+'°';
       r.querySelector('.bar i').style.left=((q[i]-l[0])/(l[1]-l[0])*100)+'%';r.classList.toggle('lim',q[i]<=l[0]+1||q[i]>=l[1]-1)}
     else r.querySelector('.ang').textContent=f1(t[i])});
-  $('spdV').textContent=speed+'%';missionUI();
+  $('spdV').textContent=speed+'%';missionUI();certCheck();
 }
 
 /* ---------- missões ---------- */
@@ -239,12 +251,13 @@ const MS=[
 function track(){for(let i=0;i<6;i++)mx[i]=Math.max(mx[i],Math.abs(q[i]-base.q[i]));const t=K.fk(q).tcp;for(let i=0;i<3;i++)cd[i]=Math.max(cd[i],Math.abs(t[i]-base.tcp[i]))}
 function pickMission(i){mi=i;seen.clear();mx.fill(0);cd.fill(0);base={q:q.slice(),tcp:K.fk(q).tcp.slice()};progDone=false;grabbed=false;alarmSeen=false;rearmed=false;
   if(i===6){pc=K.newPiece();grip.tgt=0}
-  $('mHint').style.display='none';M.target.visible=i===4;ui()}
+  $('mHint').style.display='none';M.target.visible=i===4&&!free;if(!free)coach(F('{n}, próxima etapa: '+MS[i].t+'.'));ui()}
 function missionUI(){
-  const m=MS[mi],c=m.c(),ok=c.every(x=>x[1]);if(ok)doneM[mi]=1;
+  if(free)return;
+  const m=MS[mi],c=m.c(),ok=c.every(x=>x[1]);if(ok&&!doneM[mi]){doneM[mi]=1;coach(F('Muito bem, {n}! '+m.t.split(':')[0]+' concluída.'))}
   $('mT').textContent=m.t;$('mX').textContent=m.x;$('mHint').textContent=m.h;
   $('mL').innerHTML=c.map(x=>'<li class="'+(x[1]?'ok':'')+'">'+(x[1]?'✓ ':'○ ')+x[0]+'</li>').join('');
-  $('mFb').textContent=doneM[mi]?(mi<MS.length-1?'Missão concluída! Muito bem.':'Missão concluída! Você operou o robô do começo ao fim.'):'';
+  $('mFb').textContent=doneM[mi]?(mi<MS.length-1?F('Missão concluída, {n}! Muito bem.'):F('Missão concluída, {n}! Você operou o robô do começo ao fim.')):'';
   $('mNext').disabled=!doneM[mi]||mi>=MS.length-1;
   $('mChips').innerHTML=MS.map((_,i)=>'<button type="button" class="btn sm'+(doneM[i]?' ok':'')+'" data-m="'+i+'" aria-current="'+(i===mi)+'" aria-label="Missão '+(i+1)+(doneM[i]?' concluída':'')+'">'+(doneM[i]?'✓ ':'')+(i+1)+'</button>').join('');
 }
@@ -267,8 +280,18 @@ $('mNext').onclick=()=>pickMission(Math.min(MS.length-1,mi+1));
 $('mChips').onclick=e=>{const b=e.target.closest('[data-m]');if(b)pickMission(+b.dataset.m)};
 document.querySelector('.pend').addEventListener('contextmenu',e=>e.preventDefault());
 
+/* ---------- mensagens pelo nome, modo livre e certificado ---------- */
+function coach(t){$('coach').textContent=t}
+function setFree(v){free=v;$('tMis').setAttribute('aria-pressed',String(!v));$('tLiv').setAttribute('aria-pressed',String(v));
+  $('misBody').style.display=v?'none':'';$('freeMsg').style.display=v?'block':'none';
+  $('freeMsg').textContent=F('{n}, no modo livre você opera o robô como quiser. A peça e a bancada continuam ativas.');
+  M.target.visible=!v&&mi===4;coach(v?F('{n}, modo livre ativado. Explore à vontade.'):F('{n}, de volta às missões.'));ui()}
+function showCert(){MTA.certificado({titulo:'Laboratório de Robótica Industrial',texto:'concluiu as 8 missões do laboratório de robótica industrial: eixos, coordenadas, garra, programação de pontos e segurança.'})}
+function certCheck(){const all=doneM.every(Boolean);$('bCert').style.display=all?'inline-flex':'none';if(!free&&!certShown&&all){certShown=true;showCert()}}
+$('bCert').onclick=showCert;$('tMis').onclick=()=>setFree(false);$('tLiv').onclick=()=>setFree(true);
+$('bAjuda').onclick=()=>MTA.ajuda('Como usar o laboratório',MTA.instrucoesRobo());
 try{initView()}catch(e){loadFail(e);V=null}
-buildRows();renderPts();pickMission(0);updateModel();
+buildRows();renderPts();pickMission(0);updateModel();coach(F('{n}, siga as missões abaixo ou use o modo livre. Comece pela Missão 01.'));
 let last=performance.now(),acc=0;
 function frame(t){const dt=Math.min(.05,(t-last)/1000);last=t;step(dt);acc+=dt;if(acc>.08){acc=0;ui()}if(V)V.render();requestAnimationFrame(frame)}
 requestAnimationFrame(frame);

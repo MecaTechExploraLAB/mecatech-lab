@@ -10,3 +10,13 @@ Sem internet o portal funciona normalmente, só com fonte alternativa.
 
 ROBÓTICA 3D: usa a biblioteca Three.js (r147, licença MIT) incluída em js/vendor/, sem depender de internet.
 O simulador de robótica é educacional e não controla equipamentos reais.
+
+BOAS-VINDAS E PLANILHA (página inicial)
+A página inicial abre uma conversa com um assistente: pergunta nome, idade e, para maiores de 18 anos, sobrenome, cidade e estado.
+Só o nome é necessário; o resto pode ser "Prefiro não informar". As respostas ficam no navegador (para chamar a pessoa pelo nome nos
+laboratórios) e são enviadas à planilha do Google. Para ligar a planilha:
+1) Crie uma planilha com a primeira linha: Nome | Sobrenome | Idade | Cidade | Estado | Data e Hora
+2) Extensões > Apps Script: cole o conteúdo de apps-script/Codigo.gs e salve.
+3) Implantar > Nova implantação > Aplicativo da Web > Executar como: Eu > Quem tem acesso: Qualquer pessoa.
+4) Cole o endereço /exec em js/config.js (urlPlanilha). Em js/config.js também ficam exigirTudo e permitirPular.
+Certificados: cada laboratório gera um certificado de conclusão ao terminar os desafios (js/aprendizado.js).
